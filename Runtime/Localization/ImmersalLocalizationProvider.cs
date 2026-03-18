@@ -1,16 +1,16 @@
-using System;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+
 using IndoorNavigation.Core.Enums;
 using IndoorNavigation.Core.Interfaces;
 using IndoorNavigation.Core.Models;
 using IndoorNavigation.Navigation;
+
 using UnityEngine;
 
-namespace IndoorNavigation.Localization
-{
-    public sealed class ImmersalLocalizationProvider : MonoBehaviour, ILocalizationProvider
-    {
+namespace IndoorNavigation.Localization {
+    public sealed class ImmersalLocalizationProvider : MonoBehaviour, ILocalizationProvider {
         [SerializeField]
         private ImmersalLocalizationBridge bridge;
 
@@ -24,8 +24,8 @@ namespace IndoorNavigation.Localization
         [Tooltip("Fallback map ID used when there is no active floor binding.")]
         private int fallbackMapId;
 
-        private CancellationTokenSource localizationLoopCancellation;
-        private float lastRelocalizationRequestTime = -999f;
+        private CancellationTokenSource _localizationLoopCancellation;
+        private float _lastRelocalizationRequestTime = -999f;
 
         public event Action<LocalizationPose> LocalizationSucceeded;
         public event Action<string> LocalizationFailed;
@@ -33,10 +33,8 @@ namespace IndoorNavigation.Localization
 
         public LocalizationStatus Status { get; private set; } = LocalizationStatus.Idle;
 
-        private void OnEnable()
-        {
-            if (bridge == null)
-            {
+        private void OnEnable() {
+            if (bridge == null) {
                 Debug.LogError("[ImmersalLocalizationProvider] Bridge reference is missing.");
                 return;
             }
@@ -45,10 +43,8 @@ namespace IndoorNavigation.Localization
             bridge.LocalizationFailed += OnBridgeLocalizationFailed;
         }
 
-        private void OnDisable()
-        {
-            if (bridge != null)
-            {
+        private void OnDisable() {
+            if (bridge != null) {
                 bridge.PoseReceived -= OnPoseReceived;
                 bridge.LocalizationFailed -= OnBridgeLocalizationFailed;
             }
@@ -56,74 +52,59 @@ namespace IndoorNavigation.Localization
             StopLocalization();
         }
 
-        public async Task StartLocalizationAsync(CancellationToken cancellationToken)
-        {
-            if (config == null)
-            {
+        public async Task StartLocalizationAsync(CancellationToken cancellationToken) {
+            if (config == null) {
                 Debug.LogError("[ImmersalLocalizationProvider] Config is missing.");
                 return;
             }
 
             StopLocalization();
-            localizationLoopCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            _localizationLoopCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
             UpdateStatus(LocalizationStatus.Localizing);
 
-            try
-            {
-                while (!localizationLoopCancellation.Token.IsCancellationRequested)
-                {
-                    if (!bridge.IsRequestInFlight)
-                    {
+            try {
+                while (!_localizationLoopCancellation.Token.IsCancellationRequested) {
+                    if (!bridge.IsRequestInFlight) {
                         bridge.RequestLocalization(GetCurrentMapId());
                     }
 
-                    await Task.Delay(TimeSpan.FromSeconds(config.LocalizationRetryIntervalSeconds), localizationLoopCancellation.Token);
+                    await Task.Delay(TimeSpan.FromSeconds(config.LocalizationRetryIntervalSeconds), _localizationLoopCancellation.Token);
                 }
-            }
-            catch (TaskCanceledException)
-            {
+            } catch (TaskCanceledException) {
             }
         }
 
-        public void RequestRelocalization()
-        {
-            if (config == null || bridge == null)
-            {
+        public void RequestRelocalization() {
+            if (config == null || bridge == null) {
                 return;
             }
 
-            if (Time.time - lastRelocalizationRequestTime < config.RelocalizationCooldownSeconds)
-            {
+            if (Time.time - _lastRelocalizationRequestTime < config.RelocalizationCooldownSeconds) {
                 return;
             }
 
-            lastRelocalizationRequestTime = Time.time;
+            _lastRelocalizationRequestTime = Time.time;
             UpdateStatus(LocalizationStatus.Localizing);
-            if (!bridge.IsRequestInFlight)
-            {
+            if (!bridge.IsRequestInFlight) {
                 bridge.RequestLocalization(GetCurrentMapId());
             }
         }
 
-        public void StopLocalization()
-        {
-            if (localizationLoopCancellation == null)
-            {
+        public void StopLocalization() {
+            if (_localizationLoopCancellation == null) {
                 return;
             }
 
-            localizationLoopCancellation.Cancel();
-            localizationLoopCancellation.Dispose();
-            localizationLoopCancellation = null;
+            _localizationLoopCancellation.Cancel();
+            _localizationLoopCancellation.Dispose();
+            _localizationLoopCancellation = null;
 
             UpdateStatus(LocalizationStatus.Idle);
         }
 
-        private void OnPoseReceived(LocalizationPose pose)
-        {
-            if (config != null && pose.Confidence < config.MinimumAcceptedConfidence)
-            {
+        private void OnPoseReceived(LocalizationPose pose) {
+            if (config != null && pose.Confidence < config.MinimumAcceptedConfidence) {
                 string reason = $"Localization confidence too low: {pose.Confidence:0.00}";
                 OnBridgeLocalizationFailed(reason);
                 return;
@@ -133,26 +114,21 @@ namespace IndoorNavigation.Localization
             LocalizationSucceeded?.Invoke(pose);
         }
 
-        private void OnBridgeLocalizationFailed(string reason)
-        {
+        private void OnBridgeLocalizationFailed(string reason) {
             UpdateStatus(LocalizationStatus.Failed);
             LocalizationFailed?.Invoke(reason);
         }
 
-        private int GetCurrentMapId()
-        {
-            if (floorMapRegistry != null && floorMapRegistry.ActiveBinding != null)
-            {
+        private int GetCurrentMapId() {
+            if (floorMapRegistry != null && floorMapRegistry.ActiveBinding != null) {
                 return floorMapRegistry.ActiveBinding.ImmersalMapId;
             }
 
             return fallbackMapId;
         }
 
-        private void UpdateStatus(LocalizationStatus newStatus)
-        {
-            if (Status == newStatus)
-            {
+        private void UpdateStatus(LocalizationStatus newStatus) {
+            if (Status == newStatus) {
                 return;
             }
 

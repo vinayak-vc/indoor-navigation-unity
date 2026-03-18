@@ -1,10 +1,9 @@
-using IndoorNavigation.Core.Models;
+﻿using IndoorNavigation.Core.Models;
+
 using UnityEngine;
 
-namespace IndoorNavigation.Core.Interfaces
-{
-    public interface IAlignmentService
-    {
+namespace IndoorNavigation.Core.Interfaces {
+    public interface IAlignmentService {
         Transform NavigationRoot { get; }
         bool IsSmoothing { get; }
 

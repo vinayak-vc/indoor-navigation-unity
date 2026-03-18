@@ -1,12 +1,12 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+
 using IndoorNavigation.Core.Interfaces;
 using IndoorNavigation.Core.Models;
+
 using UnityEngine;
 
-namespace IndoorNavigation.Rendering
-{
-    public sealed class ArrowController : MonoBehaviour, IArrowController
-    {
+namespace IndoorNavigation.Rendering {
+    public sealed class ArrowController : MonoBehaviour, IArrowController {
         [SerializeField]
         private GameObject arrowPrefab;
 
@@ -21,43 +21,38 @@ namespace IndoorNavigation.Rendering
         [Min(0.2f)]
         private float arrowSpacingMeters = 1.25f;
 
-        private readonly Queue<Transform> pooledArrows = new Queue<Transform>();
-        private readonly List<Transform> activeArrows = new List<Transform>();
+        private readonly Queue<Transform> _pooledArrows = new Queue<Transform>();
+        private readonly List<Transform> _activeArrows = new List<Transform>();
 
-        public void RenderArrows(NavigationPath path, int startCornerIndex)
-        {
+        public void RenderArrows(NavigationPath path, int startCornerIndex) {
             Clear();
 
-            if (arrowPrefab == null || path == null || !path.IsValid)
-            {
+            if (arrowPrefab == null || path == null || !path.IsValid) {
                 return;
             }
 
             int safeStart = Mathf.Clamp(startCornerIndex, 0, path.Corners.Count - 2);
             int arrowsPlaced = 0;
 
-            for (int segmentIndex = safeStart; segmentIndex < path.Corners.Count - 1 && arrowsPlaced < maxArrows; segmentIndex++)
-            {
+            for (int segmentIndex = safeStart; segmentIndex < path.Corners.Count - 1 && arrowsPlaced < maxArrows; segmentIndex++) {
                 Vector3 from = path.Corners[segmentIndex];
                 Vector3 to = path.Corners[segmentIndex + 1];
 
                 float segmentLength = Vector3.Distance(from, to);
-                if (segmentLength < 0.01f)
-                {
+                if (segmentLength < 0.01f) {
                     continue;
                 }
 
                 Vector3 direction = (to - from).normalized;
                 float cursor = arrowSpacingMeters * 0.5f;
 
-                while (cursor < segmentLength && arrowsPlaced < maxArrows)
-                {
+                while (cursor < segmentLength && arrowsPlaced < maxArrows) {
                     Vector3 position = from + direction * cursor;
                     Quaternion rotation = Quaternion.LookRotation(direction, Vector3.up);
                     Transform arrow = GetArrow();
                     arrow.SetPositionAndRotation(position, rotation);
                     arrow.gameObject.SetActive(true);
-                    activeArrows.Add(arrow);
+                    _activeArrows.Add(arrow);
 
                     arrowsPlaced++;
                     cursor += arrowSpacingMeters;
@@ -65,23 +60,19 @@ namespace IndoorNavigation.Rendering
             }
         }
 
-        public void Clear()
-        {
-            for (int i = 0; i < activeArrows.Count; i++)
-            {
-                Transform arrow = activeArrows[i];
+        public void Clear() {
+            for (int i = 0; i < _activeArrows.Count; i++) {
+                Transform arrow = _activeArrows[i];
                 arrow.gameObject.SetActive(false);
-                pooledArrows.Enqueue(arrow);
+                _pooledArrows.Enqueue(arrow);
             }
 
-            activeArrows.Clear();
+            _activeArrows.Clear();
         }
 
-        private Transform GetArrow()
-        {
-            if (pooledArrows.Count > 0)
-            {
-                return pooledArrows.Dequeue();
+        private Transform GetArrow() {
+            if (_pooledArrows.Count > 0) {
+                return _pooledArrows.Dequeue();
             }
 
             Transform parent = arrowContainer == null ? transform : arrowContainer;

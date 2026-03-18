@@ -1,41 +1,33 @@
-using System;
+﻿using System;
+
 using UnityEngine;
 using UnityEngine.XR.ARFoundation;
 
-namespace IndoorNavigation.Tracking
-{
-    public sealed class TrackingStateMonitor : MonoBehaviour
-    {
+namespace IndoorNavigation.Tracking {
+    public sealed class TrackingStateMonitor : MonoBehaviour {
         public event Action TrackingLost;
         public event Action TrackingRecovered;
 
         public bool IsTrackingReliable { get; private set; } = true;
 
-        private void OnEnable()
-        {
+        private void OnEnable() {
             ARSession.stateChanged += OnArSessionStateChanged;
         }
 
-        private void OnDisable()
-        {
+        private void OnDisable() {
             ARSession.stateChanged -= OnArSessionStateChanged;
         }
 
-        private void OnArSessionStateChanged(ARSessionStateChangedEventArgs eventArgs)
-        {
+        private void OnArSessionStateChanged(ARSessionStateChangedEventArgs eventArgs) {
             bool nowReliable = eventArgs.state == ARSessionState.SessionTracking;
-            if (nowReliable == IsTrackingReliable)
-            {
+            if (nowReliable == IsTrackingReliable) {
                 return;
             }
 
             IsTrackingReliable = nowReliable;
-            if (IsTrackingReliable)
-            {
+            if (IsTrackingReliable) {
                 TrackingRecovered?.Invoke();
-            }
-            else
-            {
+            } else {
                 TrackingLost?.Invoke();
             }
         }

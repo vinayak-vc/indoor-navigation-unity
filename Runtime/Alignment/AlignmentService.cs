@@ -1,11 +1,10 @@
-using IndoorNavigation.Core.Interfaces;
+﻿using IndoorNavigation.Core.Interfaces;
 using IndoorNavigation.Core.Models;
+
 using UnityEngine;
 
-namespace IndoorNavigation.Alignment
-{
-    public sealed class AlignmentService : MonoBehaviour, IAlignmentService
-    {
+namespace IndoorNavigation.Alignment {
+    public sealed class AlignmentService : MonoBehaviour, IAlignmentService {
         [SerializeField]
         private Transform navigationRoot;
 
@@ -24,24 +23,26 @@ namespace IndoorNavigation.Alignment
         [Tooltip("Ignore very small correction jitter under this threshold (degrees).")]
         private float rotationEpsilonDegrees = 0.4f;
 
-        private Vector3 targetPosition;
-        private Quaternion targetRotation;
-        private float requestedDuration;
-        private float elapsed;
+        private Vector3 _targetPosition;
+        private Quaternion _targetRotation;
+        private float _requestedDuration;
+        private float _elapsed;
 
-        public Transform NavigationRoot => navigationRoot;
+        public Transform NavigationRoot {
+            get {
+                return navigationRoot;
+            }
+        }
+
         public bool IsSmoothing { get; private set; }
 
-        public void Initialize(Transform navigationRootTransform, Transform arCamera)
-        {
+        public void Initialize(Transform navigationRootTransform, Transform arCamera) {
             navigationRoot = navigationRootTransform;
             arCameraTransform = arCamera;
         }
 
-        public void ApplyInstant(LocalizationPose localizationPose)
-        {
-            if (!TryComputeRootTransform(localizationPose, out Vector3 rootPosition, out Quaternion rootRotation))
-            {
+        public void ApplyInstant(LocalizationPose localizationPose) {
+            if (!TryComputeRootTransform(localizationPose, out Vector3 rootPosition, out Quaternion rootRotation)) {
                 return;
             }
 
@@ -49,51 +50,44 @@ namespace IndoorNavigation.Alignment
             navigationRoot.SetPositionAndRotation(rootPosition, rootRotation);
         }
 
-        public void ApplySmooth(LocalizationPose localizationPose, float smoothDurationSeconds)
-        {
-            if (!TryComputeRootTransform(localizationPose, out Vector3 rootPosition, out Quaternion rootRotation))
-            {
+        public void ApplySmooth(LocalizationPose localizationPose, float smoothDurationSeconds) {
+            if (!TryComputeRootTransform(localizationPose, out Vector3 rootPosition, out Quaternion rootRotation)) {
                 return;
             }
 
-            targetPosition = rootPosition;
-            targetRotation = rootRotation;
-            requestedDuration = Mathf.Max(0.05f, smoothDurationSeconds);
-            elapsed = 0f;
+            _targetPosition = rootPosition;
+            _targetRotation = rootRotation;
+            _requestedDuration = Mathf.Max(0.05f, smoothDurationSeconds);
+            _elapsed = 0f;
             IsSmoothing = true;
         }
 
-        public void Tick(float deltaTime)
-        {
-            if (!IsSmoothing || navigationRoot == null)
-            {
+        public void Tick(float deltaTime) {
+            if (!IsSmoothing || navigationRoot == null) {
                 return;
             }
 
-            elapsed += deltaTime;
-            float durationFactor = Mathf.Clamp01(elapsed / requestedDuration);
+            _elapsed += deltaTime;
+            float durationFactor = Mathf.Clamp01(_elapsed / _requestedDuration);
             float t = 1f - Mathf.Exp(-smoothGain * durationFactor);
 
-            Vector3 nextPosition = Vector3.Lerp(navigationRoot.position, targetPosition, t);
-            Quaternion nextRotation = Quaternion.Slerp(navigationRoot.rotation, targetRotation, t);
+            Vector3 nextPosition = Vector3.Lerp(navigationRoot.position, _targetPosition, t);
+            Quaternion nextRotation = Quaternion.Slerp(navigationRoot.rotation, _targetRotation, t);
             navigationRoot.SetPositionAndRotation(nextPosition, nextRotation);
 
-            float remainingDistance = Vector3.Distance(navigationRoot.position, targetPosition);
-            float remainingAngle = Quaternion.Angle(navigationRoot.rotation, targetRotation);
-            if (remainingDistance <= positionEpsilon && remainingAngle <= rotationEpsilonDegrees)
-            {
-                navigationRoot.SetPositionAndRotation(targetPosition, targetRotation);
+            float remainingDistance = Vector3.Distance(navigationRoot.position, _targetPosition);
+            float remainingAngle = Quaternion.Angle(navigationRoot.rotation, _targetRotation);
+            if (remainingDistance <= positionEpsilon && remainingAngle <= rotationEpsilonDegrees) {
+                navigationRoot.SetPositionAndRotation(_targetPosition, _targetRotation);
                 IsSmoothing = false;
             }
         }
 
-        private bool TryComputeRootTransform(LocalizationPose localizationPose, out Vector3 rootPosition, out Quaternion rootRotation)
-        {
+        private bool TryComputeRootTransform(LocalizationPose localizationPose, out Vector3 rootPosition, out Quaternion rootRotation) {
             rootPosition = Vector3.zero;
             rootRotation = Quaternion.identity;
 
-            if (navigationRoot == null || arCameraTransform == null)
-            {
+            if (navigationRoot == null || arCameraTransform == null) {
                 Debug.LogError("[AlignmentService] NavigationRoot or AR camera reference is missing.");
                 return false;
             }

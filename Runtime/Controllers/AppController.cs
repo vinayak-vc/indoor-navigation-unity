@@ -1,16 +1,16 @@
-using System.Threading;
+﻿using System.Threading;
+
 using IndoorNavigation.Alignment;
 using IndoorNavigation.Core.Enums;
 using IndoorNavigation.Core.Models;
 using IndoorNavigation.Localization;
 using IndoorNavigation.Navigation;
 using IndoorNavigation.Tracking;
+
 using UnityEngine;
 
-namespace IndoorNavigation.Controllers
-{
-    public sealed class AppController : MonoBehaviour
-    {
+namespace IndoorNavigation.Controllers {
+    public sealed class AppController : MonoBehaviour {
         [Header("Core Dependencies")]
         [SerializeField]
         private ImmersalLocalizationProvider localizationProvider;
@@ -39,135 +39,119 @@ namespace IndoorNavigation.Controllers
         [Min(0f)]
         private float periodicRelocalizationSeconds = 10f;
 
-        private CancellationTokenSource appCts;
-        private bool hasLocalizedOnce;
-        private LocalizationPose lastLocalizationPose;
-        private float relocalizationTimer;
+        private CancellationTokenSource _appCts;
+        private bool _hasLocalizedOnce;
+        private LocalizationPose _lastLocalizationPose;
+        private float _relocalizationTimer;
 
-        public LocalizationStatus Status => localizationProvider == null ? LocalizationStatus.Idle : localizationProvider.Status;
-        public LocalizationPose LastLocalizationPose => lastLocalizationPose;
+        public LocalizationStatus Status {
+            get {
+                return localizationProvider == null ? LocalizationStatus.Idle : localizationProvider.Status;
+            }
+        }
 
-        private void Awake()
-        {
-            if (alignmentService != null && floorMapRegistry != null && floorMapRegistry.ActiveBinding != null)
-            {
+        public LocalizationPose LastLocalizationPose {
+            get {
+                return _lastLocalizationPose;
+            }
+        }
+
+        private void Awake() {
+            if (alignmentService != null && floorMapRegistry != null && floorMapRegistry.ActiveBinding != null) {
                 alignmentService.Initialize(floorMapRegistry.ActiveBinding.NavigationRoot, arCameraTransform);
             }
         }
 
-        private async void Start()
-        {
-            if (localizationProvider == null)
-            {
+        private async void Start() {
+            if (localizationProvider == null) {
                 Debug.LogError("[AppController] LocalizationProvider is missing.");
                 return;
             }
 
-            appCts = new CancellationTokenSource();
-            await localizationProvider.StartLocalizationAsync(appCts.Token);
+            _appCts = new CancellationTokenSource();
+            await localizationProvider.StartLocalizationAsync(_appCts.Token);
         }
 
-        private void OnEnable()
-        {
-            if (localizationProvider != null)
-            {
+        private void OnEnable() {
+            if (localizationProvider != null) {
                 localizationProvider.LocalizationSucceeded += OnLocalizationSucceeded;
                 localizationProvider.LocalizationFailed += OnLocalizationFailed;
             }
 
-            if (trackingStateMonitor != null)
-            {
+            if (trackingStateMonitor != null) {
                 trackingStateMonitor.TrackingLost += OnTrackingLost;
                 trackingStateMonitor.TrackingRecovered += OnTrackingRecovered;
             }
         }
 
-        private void OnDisable()
-        {
-            if (localizationProvider != null)
-            {
+        private void OnDisable() {
+            if (localizationProvider != null) {
                 localizationProvider.LocalizationSucceeded -= OnLocalizationSucceeded;
                 localizationProvider.LocalizationFailed -= OnLocalizationFailed;
             }
 
-            if (trackingStateMonitor != null)
-            {
+            if (trackingStateMonitor != null) {
                 trackingStateMonitor.TrackingLost -= OnTrackingLost;
                 trackingStateMonitor.TrackingRecovered -= OnTrackingRecovered;
             }
 
-            appCts?.Cancel();
-            appCts?.Dispose();
-            appCts = null;
+            _appCts?.Cancel();
+            _appCts?.Dispose();
+            _appCts = null;
         }
 
-        private void Update()
-        {
-            if (alignmentService != null && alignmentService.IsSmoothing)
-            {
+        private void Update() {
+            if (alignmentService != null && alignmentService.IsSmoothing) {
                 alignmentService.Tick(Time.deltaTime);
             }
 
-            if (!hasLocalizedOnce || localizationProvider == null || periodicRelocalizationSeconds <= 0f)
-            {
+            if (!_hasLocalizedOnce || localizationProvider == null || periodicRelocalizationSeconds <= 0f) {
                 return;
             }
 
-            if (localizationProvider.Status != LocalizationStatus.Localized)
-            {
+            if (localizationProvider.Status != LocalizationStatus.Localized) {
                 return;
             }
 
-            if (trackingStateMonitor != null && !trackingStateMonitor.IsTrackingReliable)
-            {
+            if (trackingStateMonitor != null && !trackingStateMonitor.IsTrackingReliable) {
                 return;
             }
 
-            relocalizationTimer += Time.deltaTime;
-            if (relocalizationTimer >= periodicRelocalizationSeconds)
-            {
-                relocalizationTimer = 0f;
+            _relocalizationTimer += Time.deltaTime;
+            if (_relocalizationTimer >= periodicRelocalizationSeconds) {
+                _relocalizationTimer = 0f;
                 localizationProvider.RequestRelocalization();
             }
         }
 
-        private void OnLocalizationSucceeded(LocalizationPose pose)
-        {
-            lastLocalizationPose = pose;
+        private void OnLocalizationSucceeded(LocalizationPose pose) {
+            _lastLocalizationPose = pose;
 
-            if (floorMapRegistry != null && floorMapRegistry.ActivateByMapId(pose.MapId))
-            {
+            if (floorMapRegistry != null && floorMapRegistry.ActivateByMapId(pose.MapId)) {
                 alignmentService.Initialize(floorMapRegistry.ActiveBinding.NavigationRoot, arCameraTransform);
             }
 
-            bool shouldAlignInstant = instantAlignmentOnFirstLocalization && !hasLocalizedOnce;
-            if (shouldAlignInstant)
-            {
+            bool shouldAlignInstant = instantAlignmentOnFirstLocalization && !_hasLocalizedOnce;
+            if (shouldAlignInstant) {
                 alignmentService.ApplyInstant(pose);
-            }
-            else
-            {
+            } else {
                 alignmentService.ApplySmooth(pose, smoothRealignmentDurationSeconds);
             }
 
-            hasLocalizedOnce = true;
+            _hasLocalizedOnce = true;
         }
 
-        private void OnLocalizationFailed(string reason)
-        {
+        private void OnLocalizationFailed(string reason) {
             Debug.LogWarning($"[AppController] Localization failed: {reason}");
         }
 
-        private void OnTrackingLost()
-        {
+        private void OnTrackingLost() {
             Debug.LogWarning("[AppController] AR tracking lost. Requesting relocalization.");
             localizationProvider?.RequestRelocalization();
         }
 
-        private void OnTrackingRecovered()
-        {
-            if (hasLocalizedOnce)
-            {
+        private void OnTrackingRecovered() {
+            if (_hasLocalizedOnce) {
                 localizationProvider?.RequestRelocalization();
             }
         }

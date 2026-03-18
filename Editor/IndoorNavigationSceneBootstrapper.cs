@@ -1,20 +1,20 @@
-using IndoorNavigation.Alignment;
+﻿using IndoorNavigation.Alignment;
 using IndoorNavigation.Controllers;
 using IndoorNavigation.Diagnostics;
 using IndoorNavigation.Localization;
 using IndoorNavigation.Navigation;
 using IndoorNavigation.Rendering;
 using IndoorNavigation.Tracking;
+
 using UnityEditor;
 using UnityEditor.SceneManagement;
+
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.XR.ARFoundation;
 
-namespace IndoorNavigation.EditorTools
-{
-    public static class IndoorNavigationSceneBootstrapper
-    {
+namespace IndoorNavigation.EditorTools {
+    public static class IndoorNavigationSceneBootstrapper {
         private const string RootPath = "Assets/Games/indoor-navigation-unity";
         private const string SceneFolder = RootPath + "/Scenes";
         private const string PrefabFolder = RootPath + "/Prefabs";
@@ -24,18 +24,15 @@ namespace IndoorNavigation.EditorTools
         private const string ConfigPath = ConfigFolder + "/ImmersalLocalizationConfig.asset";
 
         [MenuItem("Indoor Navigation/Create Starter Scene", priority = 1)]
-        public static void CreateStarterScene()
-        {
+        public static void CreateStarterScene() {
             CreateStarterSceneInternal(showDialog: true);
         }
 
-        public static void CreateStarterSceneBatch()
-        {
+        public static void CreateStarterSceneBatch() {
             CreateStarterSceneInternal(showDialog: false);
         }
 
-        private static void CreateStarterSceneInternal(bool showDialog)
-        {
+        private static void CreateStarterSceneInternal(bool showDialog) {
             EnsureFolders();
 
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
@@ -107,8 +104,7 @@ namespace IndoorNavigation.EditorTools
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
-            if (showDialog)
-            {
+            if (showDialog) {
                 EditorUtility.DisplayDialog(
                     "Indoor Navigation",
                     "Starter scene created at Assets/Games/indoor-navigation-unity/Scenes/IndoorNavigationStarter.unity",
@@ -116,29 +112,23 @@ namespace IndoorNavigation.EditorTools
             }
         }
 
-        private static void EnsureFolders()
-        {
-            if (!AssetDatabase.IsValidFolder(SceneFolder))
-            {
+        private static void EnsureFolders() {
+            if (!AssetDatabase.IsValidFolder(SceneFolder)) {
                 AssetDatabase.CreateFolder(RootPath, "Scenes");
             }
 
-            if (!AssetDatabase.IsValidFolder(PrefabFolder))
-            {
+            if (!AssetDatabase.IsValidFolder(PrefabFolder)) {
                 AssetDatabase.CreateFolder(RootPath, "Prefabs");
             }
 
-            if (!AssetDatabase.IsValidFolder(ConfigFolder))
-            {
+            if (!AssetDatabase.IsValidFolder(ConfigFolder)) {
                 AssetDatabase.CreateFolder(RootPath, "Configs");
             }
         }
 
-        private static GameObject GetOrCreateArrowPrefab()
-        {
+        private static GameObject GetOrCreateArrowPrefab() {
             GameObject existing = AssetDatabase.LoadAssetAtPath<GameObject>(ArrowPrefabPath);
-            if (existing != null)
-            {
+            if (existing != null) {
                 return existing;
             }
 
@@ -152,11 +142,9 @@ namespace IndoorNavigation.EditorTools
             return prefab;
         }
 
-        private static ImmersalLocalizationConfig GetOrCreateConfigAsset()
-        {
+        private static ImmersalLocalizationConfig GetOrCreateConfigAsset() {
             ImmersalLocalizationConfig config = AssetDatabase.LoadAssetAtPath<ImmersalLocalizationConfig>(ConfigPath);
-            if (config != null)
-            {
+            if (config != null) {
                 return config;
             }
 
@@ -165,8 +153,7 @@ namespace IndoorNavigation.EditorTools
             return config;
         }
 
-        private static void WireFloorMapRegistry(FloorMapRegistry registry, Transform navigationRoot, GameObject floorContent)
-        {
+        private static void WireFloorMapRegistry(FloorMapRegistry registry, Transform navigationRoot, GameObject floorContent) {
             SerializedObject so = new SerializedObject(registry);
             SerializedProperty maps = so.FindProperty("maps");
             maps.ClearArray();
@@ -181,16 +168,14 @@ namespace IndoorNavigation.EditorTools
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        private static void WirePathRenderer(PathRenderer pathRenderer, LineRenderer lineRenderer, Transform destinationMarker)
-        {
+        private static void WirePathRenderer(PathRenderer pathRenderer, LineRenderer lineRenderer, Transform destinationMarker) {
             SerializedObject so = new SerializedObject(pathRenderer);
             so.FindProperty("lineRenderer").objectReferenceValue = lineRenderer;
             so.FindProperty("targetMarker").objectReferenceValue = destinationMarker;
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        private static void WireArrowController(ArrowController arrowController, GameObject arrowPrefab, Transform arrowContainer)
-        {
+        private static void WireArrowController(ArrowController arrowController, GameObject arrowPrefab, Transform arrowContainer) {
             SerializedObject so = new SerializedObject(arrowController);
             so.FindProperty("arrowPrefab").objectReferenceValue = arrowPrefab;
             so.FindProperty("arrowContainer").objectReferenceValue = arrowContainer;
@@ -201,8 +186,7 @@ namespace IndoorNavigation.EditorTools
             ImmersalLocalizationProvider provider,
             ImmersalLocalizationBridge bridge,
             ImmersalLocalizationConfig config,
-            FloorMapRegistry registry)
-        {
+            FloorMapRegistry registry) {
             SerializedObject so = new SerializedObject(provider);
             so.FindProperty("bridge").objectReferenceValue = bridge;
             so.FindProperty("config").objectReferenceValue = config;
@@ -211,8 +195,7 @@ namespace IndoorNavigation.EditorTools
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        private static void WireCallbackAdapter(ImmersalSdkCallbackAdapter adapter, ImmersalLocalizationBridge bridge)
-        {
+        private static void WireCallbackAdapter(ImmersalSdkCallbackAdapter adapter, ImmersalLocalizationBridge bridge) {
             SerializedObject so = new SerializedObject(adapter);
             so.FindProperty("bridge").objectReferenceValue = bridge;
             so.ApplyModifiedPropertiesWithoutUndo();
@@ -224,8 +207,7 @@ namespace IndoorNavigation.EditorTools
             AlignmentService alignmentService,
             TrackingStateMonitor trackingMonitor,
             FloorMapRegistry floorMapRegistry,
-            Transform arCameraTransform)
-        {
+            Transform arCameraTransform) {
             SerializedObject so = new SerializedObject(appController);
             so.FindProperty("localizationProvider").objectReferenceValue = localizationProvider;
             so.FindProperty("alignmentService").objectReferenceValue = alignmentService;
@@ -240,8 +222,7 @@ namespace IndoorNavigation.EditorTools
             NavMeshPathfindingService pathfindingService,
             PathRenderer pathRenderer,
             ArrowController arrowController,
-            Transform userTransform)
-        {
+            Transform userTransform) {
             SerializedObject so = new SerializedObject(navigationController);
             so.FindProperty("pathfindingService").objectReferenceValue = pathfindingService;
             so.FindProperty("pathRenderer").objectReferenceValue = pathRenderer;
@@ -250,8 +231,7 @@ namespace IndoorNavigation.EditorTools
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        private static void WireDebugOverlay(DebugOverlay overlay, AppController appController, NavigationController navigationController)
-        {
+        private static void WireDebugOverlay(DebugOverlay overlay, AppController appController, NavigationController navigationController) {
             SerializedObject so = new SerializedObject(overlay);
             so.FindProperty("appController").objectReferenceValue = appController;
             so.FindProperty("navigationController").objectReferenceValue = navigationController;

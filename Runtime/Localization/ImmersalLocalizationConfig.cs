@@ -1,10 +1,8 @@
-using UnityEngine;
+﻿using UnityEngine;
 
-namespace IndoorNavigation.Localization
-{
+namespace IndoorNavigation.Localization {
     [CreateAssetMenu(fileName = "ImmersalLocalizationConfig", menuName = "Indoor Navigation/Immersal Localization Config")]
-    public sealed class ImmersalLocalizationConfig : ScriptableObject
-    {
+    public sealed class ImmersalLocalizationConfig : ScriptableObject {
         [Min(0.1f)]
         public float LocalizationRetryIntervalSeconds = 2f;
 

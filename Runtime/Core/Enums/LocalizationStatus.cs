@@ -1,7 +1,5 @@
-namespace IndoorNavigation.Core.Enums
-{
-    public enum LocalizationStatus
-    {
+﻿namespace IndoorNavigation.Core.Enums {
+    public enum LocalizationStatus {
         Idle = 0,
         Localizing = 1,
         Localized = 2,
